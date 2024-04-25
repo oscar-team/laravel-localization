@@ -6,3 +6,6 @@ composer.lock
 composer.phar
 Thumbs.db
 phpunit.xml
+/.idea
+/.idea/workspace.xml
+/.DS_Store

@@ -1,17 +1,22 @@
 {
-    "name": "mcamara/laravel-localization",
+    "name": "oscar-team/laravel-localization",
     "description": "Easy localization for Laravel",
     "keywords": [
         "localization",
         "laravel",
         "php"
     ],
-    "homepage": "https://github.com/mcamara/laravel-localization",
+    "homepage": "https://github.com/oscar-team/laravel-localization",
     "license": "MIT",
     "authors": [
         {
             "name": "Marc Cámara",
             "email": "mcamara88@gmail.com",
+            "role": "Developer"
+        },
+        {
+            "name": "Adnan Shoukat",
+            "email": "ash@driveoscar.com",
             "role": "Developer"
         }
     ],
