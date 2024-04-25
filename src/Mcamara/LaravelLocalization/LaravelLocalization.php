@@ -726,8 +726,8 @@ class LaravelLocalization
     protected function findTranslatedRouteByPath($path, $url_locale)
     {
         $url_locale = str_replace(
-            array_keys($this->getLocalesMapping()),
             array_values($this->getLocalesMapping()),
+            array_keys($this->getLocalesMapping()),
             $url_locale
         );
         // check if this url is a translated url
