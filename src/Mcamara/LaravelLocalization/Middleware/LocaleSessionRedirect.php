@@ -27,7 +27,8 @@ class LocaleSessionRedirect extends LaravelLocalizationMiddlewareBase
         $locale = session('locale', false);
 
         if (\count($params) > 0 && app('laravellocalization')->checkLocaleInSupportedLocales($params[0])) {
-            session(['locale' => $params[0]]);
+            $locale = array_search($params[0], config('laravellocalization.localesMapping')) ?? $params[0];
+            session(['locale' => $locale]);
 
             return $next($request);
         }
