@@ -1,8 +1,8 @@
 # Laravel Localization
 
-[![Join the chat at https://gitter.im/mcamara/laravel-localization](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/mcamara/laravel-localization?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-
-[![Latest Stable Version](https://poser.pugx.org/mcamara/laravel-localization/version.png)](https://packagist.org/packages/mcamara/laravel-localization) [![Total Downloads](https://poser.pugx.org/mcamara/laravel-localization/d/total.png)](https://packagist.org/packages/mcamara/laravel-localization) [![Build Status](https://travis-ci.org/mcamara/laravel-localization.png)](https://travis-ci.org/mcamara/laravel-localization)
+[![Latest Version on Packagist](https://img.shields.io/packagist/v/mcamara/laravel-localization.svg?style=flat-square)](https://packagist.org/packages/mcamara/laravel-localization)
+[![Total Downloads](https://img.shields.io/packagist/dt/mcamara/laravel-localization.svg?style=flat-square)](https://packagist.org/packages/mcamara/laravel-localization)
+![GitHub Actions](https://github.com/mcamara/laravel-localization/actions/workflows/run-tests.yml/badge.svg)
 [![Open Source Helpers](https://www.codetriage.com/mcamara/laravel-localization/badges/users.svg)](https://www.codetriage.com/mcamara/laravel-localization)
 [![Reviewed by Hound](https://img.shields.io/badge/Reviewed_by-Hound-8E64B0.svg)](https://houndci.com)
 
@@ -46,7 +46,7 @@ The package offers the following:
  5.2.x-5.4.x (PHP 7 not required)  | 1.2.
  5.2.0-6.x (PHP version >= 7 required) | 1.4.x
  6.x-10.x (PHP version >= 7 required) | 1.8.x
- 10.x-11.x (PHP version >= 8.2 required) | 2.0.x
+ 10.x-12.x (PHP version >= 8.2 required) | 2.0.x
 
 ## Installation
 
@@ -98,6 +98,23 @@ class Kernel extends HttpKernel {
         'localeViewPath'          => \Mcamara\LaravelLocalization\Middleware\LaravelLocalizationViewPath::class
     ];
 }
+```
+
+If you are using Laravel 11, you may register in `bootstrap/app.php` file in closure `withMiddleware`:
+
+```php
+return Application::configure(basePath: dirname(__DIR__))
+    // Other application configurations
+    ->withMiddleware(function (Middleware $middleware) {
+        $middleware->alias([
+            /**** OTHER MIDDLEWARE ALIASES ****/
+            'localize'                => \Mcamara\LaravelLocalization\Middleware\LaravelLocalizationRoutes::class,
+            'localizationRedirect'    => \Mcamara\LaravelLocalization\Middleware\LaravelLocalizationRedirectFilter::class,
+            'localeSessionRedirect'   => \Mcamara\LaravelLocalization\Middleware\LocaleSessionRedirect::class,
+            'localeCookieRedirect'    => \Mcamara\LaravelLocalization\Middleware\LocaleCookieRedirect::class,
+            'localeViewPath'          => \Mcamara\LaravelLocalization\Middleware\LaravelLocalizationViewPath::class,
+        ]);
+    })
 ```
 
 ## Usage
@@ -381,10 +398,13 @@ Note that Route Model Binding is supported.
 You may translate your routes. For example, http://url/en/about and http://url/es/acerca (acerca is about in spanish)
 or http://url/en/article/important-article and http://url/es/articulo/important-article (article is articulo in spanish) would be redirected to the same controller/view as follows:
 
-It is necessary that at least the `localize` middleware in loaded in your `Route::group` middleware (See [installation instruction](#LaravelLocalizationRoutes)).
+It is necessary that at least the `localize` middleware in loaded in your `Route::group` middleware (See [installation instruction](#installation)).
 
 For each language, add a `routes.php` into `resources/lang/**/routes.php` folder.
 The file contains an array with all translatable routes. For example, like this:
+
+> Keep in mind: starting from [Laravel 9](https://laravel.com/docs/9.x/upgrade#the-lang-directory), the `resources/lang` folder is now located in the root project folder (`lang`).
+> If your project has `lang` folder in the root, you must add a `routes.php` into `lang/**/routes.php` folder.
 
 ```php
 <?php
@@ -476,27 +496,64 @@ Be sure to pass the locale and the attributes as parameters to the closure. You 
 
 ## Caching routes
 
-To cache your routes, use:
+> [!CAUTION]
+> By default, this package is not compatible with Laravel’s route caching.
+> Running commands such as `php artisan route:cache` or `php artisan optimize` will cause localized routes to return 404 errors.
 
-``` bash
+To enable route caching for your localized routes, you may use the `LoadsTranslatedCachedRoutes` trait provided by this package.
+Depending on your Laravel version, you will need to apply the trait differently:
+
+**Before Laravel 11**    
+If your application includes a `RouteServiceProvider`, add the `LoadsTranslatedCachedRoutes` trait to it:
+
+```php
+use Illuminate\Foundation\Support\Providers\RouteServiceProvider as ServiceProvider;
+use Mcamara\LaravelLocalization\Traits\LoadsTranslatedCachedRoutes;
+
+class RouteServiceProvider extends ServiceProvider
+{
+    use LoadsTranslatedCachedRoutes;
+}
+```
+
+**After Laravel 11**    
+For Laravel 11 and newer, add the `LoadsTranslatedCachedRoutes` trait to your `AppServiceProvider`, and register the cached routes within the boot method:
+
+```php
+use Illuminate\Foundation\Support\Providers\RouteServiceProvider;
+use Illuminate\Support\ServiceProvider;
+use Mcamara\LaravelLocalization\Traits\LoadsTranslatedCachedRoutes;
+
+class AppServiceProvider extends ServiceProvider
+{
+    use LoadsTranslatedCachedRoutes;
+
+    public function boot(): void
+    {
+        RouteServiceProvider::loadCachedRoutesUsing(fn () => $this->loadCachedRoutes());
+
+        // ...
+    }
+}
+```
+
+Once configured, use the following command to cache your localized routes instead of `php artisan route:cache`:
+```bash
 php artisan route:trans:cache
 ```
 
-... instead of the normal `route:cache` command. Using `artisan route:cache` will **not** work correctly!
-
-For the route caching solution to work, it is required to make a minor adjustment to your application route provision.
-
-In your App's `RouteServiceProvider`, use the `LoadsTranslatedCachedRoutes` trait:
-
-```php
-<?php
-class RouteServiceProvider extends ServiceProvider
-{
-    use \Mcamara\LaravelLocalization\Traits\LoadsTranslatedCachedRoutes;
+To clear the localized route cache, use:
+```bash
+php artisan route:trans:clear
 ```
 
+To get a list of routes for a given locale, use:
+```bash
+php artisan route:trans:list {locale}
 
-For more details see [here](CACHING.md).
+# Example:
+php artisan route:trans:list en
+```
 
 ## Common Issues
 
@@ -544,32 +601,77 @@ To localize your post url see the example in [POST is not working](#post-is-not-
 
 ## Testing
 
-During the test setup, the called route is not yet known. This means no language can be set.
-When a request is made during a test, this results in a 404 - without the prefix set the localized route does not seem to exist.
+In a typical request lifecycle, your application is bootstrapped automatically — allowing this package to detect the active route and set the appropriate locale.
+However, when running tests, the application is bootstrapped before any request is made. As a result, the package can’t determine the current route, which often leads to a `404` error.
 
-To fix this, you can use this function to manually set the language prefix:
+To handle this, you can manually define the locale prefix in your tests by refreshing the application with a specific locale:
+
+### PHPUnit
 ```php
-// TestCase.php
-protected function refreshApplicationWithLocale($locale)
-{
-    self::tearDown();
-    putenv(LaravelLocalization::ENV_ROUTE_KEY . '=' . $locale);
-    self::setUp();
-}
+use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
+use Mcamara\LaravelLocalization\LaravelLocalization;
 
-protected function tearDown(): void
+abstract class TestCase extends BaseTestCase
 {
-    putenv(LaravelLocalization::ENV_ROUTE_KEY);
-    parent::tearDown();
-}
+    protected function refreshApplicationWithLocale(string $locale): void
+    {
+        self::tearDown();
+        putenv(LaravelLocalization::ENV_ROUTE_KEY . '=' . $locale);
+        self::setUp();
+    }
 
-// YourTest.php
-public function testBasicTest()
-{
-    $this->refreshApplicationWithLocale('en');
-    // Testing code
+    protected function tearDown(): void
+    {
+        putenv(LaravelLocalization::ENV_ROUTE_KEY);
+        parent::tearDown();
+    }
 }
 ```
+
+```php
+final class HomeControllerTest extends TestCase
+{
+    public function it_can_visit_the_home_page()
+    {
+        $this->refreshApplicationWithLocale('en');
+
+        $response = $this->get('/en');
+
+        $response->assertStatus(200);
+    }
+}
+```
+
+### Pest
+```php
+// Pest.php
+use Mcamara\LaravelLocalization\LaravelLocalization;
+
+function refreshApplicationWithLocale(string $locale): void
+{
+    /** @var \Tests\TestCase $test */
+    $test = test();
+
+    $test->tearDown();
+    putenv(LaravelLocalization::ENV_ROUTE_KEY . '=' . $locale);
+    $test->setUp();
+}
+
+pest()->afterEach(function () {
+    putenv(LaravelLocalization::ENV_ROUTE_KEY);
+});
+```
+```php
+// YourTest.php
+test('it can visit the home page', function () {
+    refreshApplicationWithLocale('en');
+
+    $response = $this->get('/en');
+
+    $response->assertStatus(200);
+});
+```
+
 
 ## Collaborators
 - [Adam Nielsen (iwasherefirst2)](https://github.com/iwasherefirst2)
