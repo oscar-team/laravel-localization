@@ -6,6 +6,23 @@
 [![Open Source Helpers](https://www.codetriage.com/mcamara/laravel-localization/badges/users.svg)](https://www.codetriage.com/mcamara/laravel-localization)
 [![Reviewed by Hound](https://img.shields.io/badge/Reviewed_by-Hound-8E64B0.svg)](https://houndci.com)
 
+> **Architecture note & recommended successor**
+>
+> This package generates routes dynamically per request, which has a
+> number of side effects - most notably, `php artisan route:cache`
+> isn't supported out of the box. For new projects or apps planning to
+> migrate,
+> [**niels-numbers/laravel-localizer**](https://github.com/niels-numbers/laravel-localizer)
+> is the recommended modern successor - same feature set, but with
+> statically registered routes that support `route:cache` natively. See
+> the [migration guide](https://localizer.adam-nielsen.de/migrating-from-laravel-localization)
+> for the swap.
+>
+> This package remains actively maintained by
+> [@jordyvanderhaegen](https://github.com/jordyvanderhaegen) for users
+> who need to stay on the current architecture. Compatibility updates
+> (Laravel/PHP versions, security, small bug fixes) continue here.
+
 Easy i18n localization for Laravel, an useful tool to combine with Laravel localization classes.
 
 The package offers the following:
@@ -43,10 +60,10 @@ The package offers the following:
  4.1.x        | 0.13.x
  4.2.x        | 0.15.x
  5.0.x/5.1.x  | 1.0.x
- 5.2.x-5.4.x (PHP 7 not required)  | 1.2.
+ 5.2.x-5.4.x (PHP 7 not required)  | 1.2.x
  5.2.0-6.x (PHP version >= 7 required) | 1.4.x
  6.x-10.x (PHP version >= 7 required) | 1.8.x
- 10.x-12.x (PHP version >= 8.2 required) | 2.0.x
+ 10.x-13.x (PHP version >= 8.2 required) | 2.0.x
 
 ## Installation
 

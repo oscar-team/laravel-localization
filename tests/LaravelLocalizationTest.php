@@ -769,8 +769,10 @@ final class LaravelLocalizationTest extends TestCase
 
         $full_config = include __DIR__ . '/full-config/config.php';
 
-        $request = $this->createMock(\Illuminate\Http\Request::class);
-        $request->expects($this->any())->method('header')->with('Accept-Language')->willReturn($accept_string);
+        $request = Request::create(
+            uri: '/',
+            server: ['HTTP_ACCEPT_LANGUAGE' => $accept_string],
+        );
 
         $negotiator = app(LanguageNegotiator::class, [
             'defaultLocale' => 'wrong',
@@ -822,8 +824,10 @@ final class LaravelLocalizationTest extends TestCase
 
         app('config')->set('laravellocalization.localesMapping', $mapping);
 
-        $request = $this->createMock(\Illuminate\Http\Request::class);
-        $request->expects($this->any())->method('header')->with('Accept-Language')->willReturn($accept_string);
+        $request = Request::create(
+            uri: '/',
+            server: ['HTTP_ACCEPT_LANGUAGE' => $accept_string],
+        );
 
         $negotiator = app(LanguageNegotiator::class, [
             'defaultLocale' => 'wrong',
@@ -876,5 +880,43 @@ final class LaravelLocalizationTest extends TestCase
         $response->assertStatus(302);
         $response->assertRedirect(self::TEST_URL . $savedLocale);
         $response->assertPlainCookie('locale', $savedLocale);
+    }
+
+    /**
+     * @see https://github.com/mcamara/laravel-localization/issues/953
+     */
+    public function testGetLocaleFromMappingWithNullDoesNotTriggerDeprecation(): void
+    {
+        $this->assertNull(app('laravellocalization')->getLocaleFromMapping(null));
+    }
+
+    /**
+     * @see https://github.com/mcamara/laravel-localization/issues/953
+     */
+    public function testGetInversedLocaleFromMappingWithNullDoesNotTriggerDeprecation(): void
+    {
+        $this->assertNull(app('laravellocalization')->getInversedLocaleFromMapping(null));
+    }
+
+    /**
+     * @see https://github.com/mcamara/laravel-localization/issues/953
+     */
+    public function testSetLocaleWithNullSegmentAndNoForcedLocaleDoesNotTriggerDeprecation(): void
+    {
+        // Simulate a request with no locale segment (e.g. hitting the root URL)
+        $this->refreshApplication();
+
+        $result = app('laravellocalization')->setLocale(null);
+
+        // Should return null since no valid locale was found
+        $this->assertNull($result);
+    }
+
+    /**
+     * @see https://github.com/mcamara/laravel-localization/issues/953
+     */
+    public function testCheckLocaleInSupportedLocalesWithNullDoesNotTriggerDeprecation(): void
+    {
+        $this->assertFalse(app('laravellocalization')->checkLocaleInSupportedLocales(null));
     }
 }

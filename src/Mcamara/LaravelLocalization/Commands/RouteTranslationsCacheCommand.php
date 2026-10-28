@@ -6,6 +6,7 @@ use Illuminate\Foundation\Console\RouteCacheCommand;
 use Mcamara\LaravelLocalization\LaravelLocalization;
 use Mcamara\LaravelLocalization\Traits\TranslatedRouteCommandContext;
 use Illuminate\Routing\RouteCollection;
+use Illuminate\Support\Str;
 
 class RouteTranslationsCacheCommand extends RouteCacheCommand
 {
@@ -20,6 +21,25 @@ class RouteTranslationsCacheCommand extends RouteCacheCommand
      * @var string
      */
     protected $description = 'Create a route cache file for faster route registration for all locales';
+
+
+    /**
+     * Configure the console command using a fluent definition.
+     *
+     * Laravel 13.24 moved RouteCacheCommand to a `$signature`, which takes precedence over
+     * `$name`, so without this the command registers itself as `route:cache`, hijacking
+     * Laravel's native command. Rewriting the inherited signature keeps the parent's
+     * arguments and options instead of restating them.
+     *
+     * @return void
+     */
+    #[\Override]
+    protected function configureUsingFluentDefinition()
+    {
+        $this->signature = Str::replaceFirst('route:cache', $this->name, $this->signature);
+
+        parent::configureUsingFluentDefinition();
+    }
 
 
     /**
